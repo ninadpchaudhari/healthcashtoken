@@ -27,6 +27,9 @@ contract HealthCashToken is BurnableToken, ReleasableToken {
     totalSupply = _totalSupply;
     decimals = _decimals;
     balances[owner] = totalSupply;
+
+    //allow owner to transfer
+    setTransferAgent(owner, true);
   }
 
 
