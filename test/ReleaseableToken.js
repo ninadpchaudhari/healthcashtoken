@@ -29,13 +29,20 @@ contract('HealthCash :: ReleasableToken', function(accounts) {
   })
 
   it('should be unable to transfer due to lock', async function() {
-    await this.token.transfer(accounts[1], 100)
-    let balance0 = await this.token.balanceOf(accounts[0])
-    balance0.should.be.bignumber.equal(100)
+    
+    //transfer from valid agent
+    await this.token.transfer(accounts[1], 20) 
+
+    //try transfer from non-trasnfer agent
+    await this.token.transfer(accounts[0], 20, {from: accounts[1]}) 
+
+    let balance = await this.token.balanceOf(accounts[0])
+    balance.should.be.bignumber.equal(80)
+
   })
 
   it('should let transfer agents transfer', async function() {
-    await this.token.setTransferAgent(accounts[0], true) 
+
     await this.token.transfer(accounts[1], 20)
     let balance = await this.token.balanceOf(accounts[0])
     balance.should.be.bignumber.equal(80)
@@ -45,15 +52,13 @@ contract('HealthCash :: ReleasableToken', function(accounts) {
   })
 
   it('transfer agents should be unable to transfer more than balance', async function() {
-    await this.token.setTransferAgent(accounts[0], true)    
+ 
     await this.token.transfer(accounts[1], 101)
     let balance = await this.token.balanceOf(accounts[0])
     balance.should.be.bignumber.equal(100,'Should have failed to transfer tokens.')
   })
 
   it('should return correct balances after transfering from another account', async function() {
-
-    await this.token.setTransferAgent(accounts[0], true)
 
     await this.token.approve(accounts[1], 100)
     await this.token.transferFrom(accounts[0], accounts[1], 100, {from: accounts[1]})
@@ -68,7 +73,6 @@ contract('HealthCash :: ReleasableToken', function(accounts) {
 
   it('should not allow transfering more than allowed', async function() {
 
-    await this.token.setTransferAgent(accounts[1], true)    
     await this.token.approve(accounts[1], 99)
     await this.token.transferFrom(accounts[0], accounts[1], 100, {from: accounts[1]})
 
