@@ -5,6 +5,7 @@ const should = require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should()
 
+var Whitelist = artifacts.require("./Whitelist.sol")  
 var WhitelistProxyBuyer = artifacts.require("./WhitelistProxyBuyer.sol")
 
 contract('WhitelistProxyBuyer :: Basic', function(accounts) {
@@ -15,12 +16,17 @@ contract('WhitelistProxyBuyer :: Basic', function(accounts) {
     let weiMinimumLimit = 1000000000000000000
     let weiMaximumLimit = 5000000000000000000
     let weiCap = 400000000000000000000
-    this.whitelist = await WhitelistProxyBuyer.new(owner, freezeEndsAt, weiMinimumLimit, weiMaximumLimit, weiCap)
+
+    this.whitelist = await Whitelist.new()
+    this.proxybuyer = await WhitelistProxyBuyer.new(owner, freezeEndsAt, weiMinimumLimit, weiMaximumLimit, weiCap)
+
+    await this.proxybuyer.setWhitelist(this.whitelist.address) 
+
   })
 
   it('should start in state Funding', async function() {
 
-    let state = await this.whitelist.getState() 
+    let state = await this.proxybuyer.getState() 
     state.should.be.bignumber.equal(1)
 
   })
@@ -28,8 +34,8 @@ contract('WhitelistProxyBuyer :: Basic', function(accounts) {
 
   it('should allow owner to change the WeiMinimumLimit', async function() {
 
-    await this.whitelist.setWeiMinimumLimit(1000)
-    let minLimit = await this.whitelist.weiMinimumLimit()
+    await this.proxybuyer.setWeiMinimumLimit(1000)
+    let minLimit = await this.proxybuyer.weiMinimumLimit()
     minLimit.should.be.bignumber.equal(1000)
 
   })
@@ -39,7 +45,7 @@ contract('WhitelistProxyBuyer :: Basic', function(accounts) {
       let addresses = [accounts[0], accounts[1]]
       await this.whitelist.addToWhitelist(addresses)
 
-      let isListed = await this.whitelist.isWhitelisted(accounts[0])  
+      let isListed = await this.whitelist.verify(accounts[0])  
       isListed.should.be.equal(true)
   })
 
@@ -48,8 +54,8 @@ contract('WhitelistProxyBuyer :: Basic', function(accounts) {
     let min = 1000000000000000000;
     let addresses = [accounts[0], accounts[1]]
     await this.whitelist.addToWhitelist(addresses)
-    await this.whitelist.buy({from: accounts[0], value: min})
-    let balance = await this.whitelist.balances(accounts[0])
+    await this.proxybuyer.buy({from: accounts[0], value: min})
+    let balance = await this.proxybuyer.balances(accounts[0])
     balance.should.be.bignumber.equal(min)
 
 })

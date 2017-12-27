@@ -14,6 +14,7 @@ import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import 'zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 import 'zeppelin-solidity/contracts/token/DetailedERC20.sol';
 
+import "./Whitelist.sol";
 import "./Crowdsale.sol";
 
 
@@ -76,6 +77,9 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   // Our crowdsale contract where we will move the funds 
   Crowdsale public crowdsale;
 
+  // Our Whitelist where approved purchasers are listed
+  Whitelist public whitelist;
+
   // What is our current state. 
   enum State { Unknown, Funding, Distributing, Refunding }
 
@@ -90,9 +94,6 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
 
   // We distributed tokens to an investor 
   event Distributed(address investor, uint count);
-  
-  // Only whitelisted addresses may participate 
-  mapping (address => bool) whiteListedAddr;
 
   function WhitelistProxyBuyer(
       address _owner, 
@@ -125,38 +126,15 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
       return crowdsale.token();
   }
 
-  // Add users to whitelist 
-  function addToWhitelist(address[] users)
-      public
-      onlyOwner
-  {
-      for (uint i = 0; i < users.length; i++) {
-          whiteListedAddr[users[i]] = true;
-      }
-  }
-
-  function isWhitelisted(address _user) 
-      public
-      constant
-      returns (bool)  
-  {
-      return whiteListedAddr[_user];
-  }
-
-  modifier canParticipate(address _user) {
-      require(isWhitelisted(_user));
-      _;
-  }
-
-
   // Participate in whitelist contribution 
   function buy()
       public
       payable
       whenNotPaused
-      canParticipate(msg.sender)      
    {
-    
+
+    require(address(whitelist) != address(0)); // whitelist should be set    
+    require(whitelist.verify(msg.sender));
     require(getState() == State.Funding);
     require(msg.value > 0); // No empty buys
     address investor = msg.sender;
@@ -274,6 +252,16 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
     crowdsale = _crowdsale;
   }
 
+  
+  // Set the whitelist which approves our buyers
+  function setWhitelist(Whitelist _whitelist) 
+      public
+      onlyOwner 
+  {  
+      whitelist = _whitelist;
+  }
+
+
   // set time after which claiming is possible
   function setTimeLock(uint _timeLock)
       public
@@ -333,9 +321,9 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
       }
   }
 
-  // only accept funds with buy() or loadRefund()
+  // accept buy() through fallback
   function() public payable {
-    revert();
+    buy();
   }
 
 }
