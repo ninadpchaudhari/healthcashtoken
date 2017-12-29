@@ -60,5 +60,15 @@ contract('WhitelistProxyBuyer :: Basic', function(accounts) {
 
 })
 
+it('should allow owner to remove from whitelist', async function() {
+
+  let addresses = [accounts[0], accounts[1]]
+  await this.whitelist.addToWhitelist(addresses)
+  await this.whitelist.removeFromWhitelist(addresses)
+  
+  let isListed = await this.whitelist.verify(accounts[0])  
+  isListed.should.be.equal(false)
+})
+
 
 })

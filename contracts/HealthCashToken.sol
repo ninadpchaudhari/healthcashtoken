@@ -2,7 +2,7 @@
 pragma solidity ^0.4.14;
 
 import 'zeppelin-solidity/contracts/token/BurnableToken.sol';
-import "./ReleaseableToken.sol";
+import "./ReleasableToken.sol";
 
 contract HealthCashToken is BurnableToken, ReleasableToken {
 

@@ -131,6 +131,11 @@ contract TokenTranchePricing is PricingStrategy, Ownable {
     return getCurrentTranche(tokensSold).price;
   }
 
+  function isPresalePurchase(address purchaser) public constant returns (bool) {
+    return (preicoAddresses[purchaser] > 0);
+  }
+
+
   // @dev Calculate the current price for buy in amount.
   function calculatePrice(uint value, uint weiRaised, uint tokensSold, address msgSender, uint decimals) public constant returns (uint) {
 

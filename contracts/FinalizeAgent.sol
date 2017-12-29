@@ -1,0 +1,35 @@
+/**
+ * Numerous modifications have been made to this smart contract.
+ * All such modifications are Copyright 2017 SimplyVitalHealth, Inc. 
+ * 
+ * This smart contract code is Copyright 2017 TokenMarket Ltd. For more information see https://tokenmarket.net
+ * Licensed under the Apache License, version 2.0: https://github.com/Health-Nexus/healthcashtoken/blob/master/LICENSE
+ * 
+ */
+
+pragma solidity ^0.4.18;
+
+/**
+ * Finalize agent defines what happens at the end of succeseful crowdsale.
+ *
+ * - Allocate tokens for founders, bounties and community
+ * - Make tokens transferable
+ * - etc.
+ */
+contract FinalizeAgent {
+
+  function isFinalizeAgent() public constant returns(bool) {
+    return true;
+  }
+
+  /** Return true if we can run finalizeCrowdsale() properly.
+   *
+   * This is a safety check function that doesn't allow crowdsale to begin
+   * unless the finalizer has been set up properly.
+   */
+  function isSane() public constant returns (bool);
+
+  /** Called once by crowdsale finalize() if the sale was success. */
+  function finalizeCrowdsale() public;
+
+}
