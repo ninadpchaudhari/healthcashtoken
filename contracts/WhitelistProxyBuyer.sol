@@ -84,7 +84,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   enum State { Unknown, Funding, Distributing, Refunding }
 
   // Somebody loaded their investment money 
-  event Invested(address investor, uint weiAmount, uint tokenAmount, uint128 customerId);
+  event Invested(address investor, uint weiAmount, uint tokenAmount);
 
   // Refund claimed 
   event Refunded(address investor, uint value);
@@ -157,7 +157,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
 
     /** We will use the same event as the crowdsale for compatibility reasons
      *  despite not having a token amount. */
-    Invested(investor, msg.value, 0, 0);
+    Invested(investor, msg.value, 0);
 
   }
 

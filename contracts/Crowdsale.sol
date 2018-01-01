@@ -20,7 +20,7 @@ import "./AllocatedCrowdsaleMixin.sol";
  *
  * Handle
  * - start and end dates
- * - accepting investments
+ * - accepting contributions
  * - minimum funding goal and refund
  * - various statistics during the crowdfund
  * - different pricing strategies
@@ -29,8 +29,12 @@ import "./AllocatedCrowdsaleMixin.sol";
  */
 contract Crowdsale is AllocatedCrowdsaleMixin {
 
-  // Keep track of how much each referrer refferred 
+  //keep track of refferers
+  uint128[] public referrers;
+
+  // keep track of how much each referrer refferred 
   mapping(uint128 => uint) public referrals;
+
 
   function Crowdsale(
       address _token,
@@ -84,12 +88,11 @@ contract Crowdsale is AllocatedCrowdsaleMixin {
     assignTokens(receiver, tokenAmount);
 
     // Tell us invest was success
-    Invested(receiver, weiAmount, tokenAmount, 0);
+    Invested(receiver, weiAmount, tokenAmount);
   }
 
   function investWithSignedAddress(
       address addr,
-      uint128 customerId,
       uint8 v,
       bytes32 r,
       bytes32 s)
@@ -99,37 +102,56 @@ contract Crowdsale is AllocatedCrowdsaleMixin {
      require(address(whitelist) != address(0));
      require(whitelist.verifyWithSignature(addr, v, r, s)); 
      require(addr == msg.sender);
-     investInternal(addr, customerId);
+     investInternal(addr);
   }
 
   // Allow anonymous contributions to this crowdsale.
   function invest(address addr) public payable {
       
-      // Crowdsale allows only server-side signed participants
+      // crowsale has whitelist
       if (address(whitelist) != address(0)) {
+
+        // require a server signed address to participate
         if (whitelist.requiredSignedAddress()) {
+
             revert(); 
+
         } else {
+
+            // use standard verification
             require(whitelist.verify(addr));
         }
+
       }
 
-      investInternal(addr, 0);
+      investInternal(addr);
   }
 
-  // Invest to tokens, recognize the payer and clear his address
-  function buyWithSignedAddress(uint128 customerId, uint8 v, bytes32 r, bytes32 s) public payable {
-      investWithSignedAddress(msg.sender, customerId, v, r, s);
+  // purchase tokens with server signed address
+  function buyWithSignedAddress(uint8 v, bytes32 r, bytes32 s) public payable {
+      investWithSignedAddress(msg.sender, v, r, s);
   }
 
   // Invest to tokens, keep track of referral totals
-  function buyWithReferralSignedAddress(uint128 customerId, uint128 referralId, uint8 v, bytes32 r, bytes32 s) public payable {
+  function buyWithReferralSignedAddress(uint128 referralId, uint8 v, bytes32 r, bytes32 s) public payable {
+
+      // add new referrers to our list
+      if (referrals[referralId] == 0) {
+          referrers.push(referralId);
+      }
+
       referrals[referralId] = referrals[referralId].add(msg.value);      
-      investWithSignedAddress(msg.sender, customerId, v, r, s);
+      investWithSignedAddress(msg.sender, v, r, s);
   }
 
   // Invest to tokens, keep track of referral totals
   function buyWithReferral(uint128 referralId) public payable {
+
+      // add new refferers to our list
+      if (referrals[referralId] == 0) {
+          referrers.push(referralId);
+      }
+
       referrals[referralId] = referrals[referralId].add(msg.value);      
       invest(msg.sender);
   }

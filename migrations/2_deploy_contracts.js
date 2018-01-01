@@ -1,5 +1,6 @@
 var hlth = artifacts.require("./HealthCashToken.sol")
-var whitelist = artifacts.require("./WhitelistProxyBuyer.sol")
+var whitelistPB = artifacts.require("./WhitelistProxyBuyer.sol")
+var whitelist = artifacts.require("./Whitelist.sol")
 
 module.exports = function(deployer) {
     let name = 'Health Cash'
@@ -14,7 +15,9 @@ module.exports = function(deployer) {
     let weiMinimumLimit = 1000000000000000000
     let weiMaximumLimit = 5000000000000000000
     let weiCap = 400000000000000000000
-    deployer.deploy(whitelist, owner, freezeEndsAt, weiMinimumLimit, weiMaximumLimit, weiCap)
+    deployer.deploy(whitelistPB, owner, freezeEndsAt, weiMinimumLimit, weiMaximumLimit, weiCap)
+
+    deployer.deploy(whitelist)
 
 
 };

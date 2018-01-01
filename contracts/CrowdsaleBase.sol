@@ -18,76 +18,72 @@ import "./Whitelist.sol";
 import "./PricingStrategy.sol";
 import "./FinalizeAgent.sol";
 
-
 /**
  * Crowdsale state machine without buy functionality.
  *
  * Implements basic state machine logic, but leaves out all buy functions,
  * so that subclasses can implement their own buying logic.
- *
- *
- * For the default buy() implementation see Crowdsale.sol.
  */
 contract CrowdsaleBase is Ownable, Pausable {
+   
+    // max investment count when we are still allowed to change the multisig address
+    uint public MAX_INVESTMENTS_BEFORE_MULTISIG_CHANGE = 5;
 
-  /* Max investment count when we are still allowed to change the multisig address */
-  uint public MAX_INVESTMENTS_BEFORE_MULTISIG_CHANGE = 5;
+    using SafeMath for uint;
 
-  using SafeMath for uint;
+    // token we are selling
+    DetailedERC20 public token;
 
-  /* The token we are selling */
-  DetailedERC20 public token;
+    // how we are going to price our offering
+    PricingStrategy public pricingStrategy;
 
-  /* How we are going to price our offering */
-  PricingStrategy public pricingStrategy;
+    // post-success callback
+    FinalizeAgent public finalizeAgent;
 
-  /* Post-success callback */
-  FinalizeAgent public finalizeAgent;
+    // tokens will be transfered from this address
+    address public multisigWallet;
 
-  /* tokens will be transfered from this address */
-  address public multisigWallet;
+    // if the funding goal is not reached, investors may withdraw their funds
+    uint public minimumFundingGoal;
 
-  /* if the funding goal is not reached, investors may withdraw their funds */
-  uint public minimumFundingGoal;
+    // unix timestamp start date of the token sale 
+    uint public startsAt;
 
-  /* the UNIX timestamp start date of the crowdsale */
-  uint public startsAt;
+    // unix timestamp end date of the token sale
+    uint public endsAt;
 
-  /* the UNIX timestamp end date of the crowdsale */
-  uint public endsAt;
+    // the number of tokens already sold through this contract
+    uint public tokensSold = 0;
 
-  /* the number of tokens already sold through this contract*/
-  uint public tokensSold = 0;
+    // how many wei of funding we have raised
+    uint public weiRaised = 0;
 
-  /* How many wei of funding we have raised */
-  uint public weiRaised = 0;
+    // calculate incoming funds from presale contracts and addresses
+    uint public presaleWeiRaised = 0;
 
-  /* Calculate incoming funds from presale contracts and addresses */
-  uint public presaleWeiRaised = 0;
+    // how many distinct addresses have invested
+    uint public investorCount = 0;
 
-  /* How many distinct addresses have invested */
-  uint public investorCount = 0;
+    // how much wei we have returned back to the contract after a failed token sale
+    uint public loadedRefund = 0;
 
-  /* How much wei we have returned back to the contract after a failed crowdfund. */
-  uint public loadedRefund = 0;
+    // how much wei we have given back
+    uint public weiRefunded = 0;
 
-  /* How much wei we have given back to investors.*/
-  uint public weiRefunded = 0;
+    // has this crowdsale been finalized
+    bool public finalized;
 
-  /* Has this crowdsale been finalized */
-  bool public finalized;
+    // how much ETH each address has contributed to this token sale
+    mapping (address => uint256) public investedAmountOf;
 
-  /** How much ETH each address has invested to this crowdsale */
-  mapping (address => uint256) public investedAmountOf;
+    // how much tokens this crowdsale has credited for each address
+    mapping (address => uint256) public tokenAmountOf;
 
-  /** How much tokens this crowdsale has credited for each investor address */
-  mapping (address => uint256) public tokenAmountOf;
+    // our whitelist contract
+    Whitelist public whitelist;
 
-  /** Our Whitelist contract */
-  Whitelist public whitelist;
-
-  /** You can set it to any value and inspect this in blockchain explorer to see that crowdsale interaction works. */
-  uint public ownerTestValue;
+    // you can set it to any value and inspect this in blockchain explorer to see that crowdsale interaction works
+    uint public ownerTestValue;
 
   /** State machine
    *
@@ -101,18 +97,17 @@ contract CrowdsaleBase is Ownable, Pausable {
    */
   enum State {Unknown, Preparing, PreFunding, Funding, Success, Failure, Finalized, Refunding}
 
-  // A new investment was made
-  event Invested(address investor, uint weiAmount, uint tokenAmount, uint128 customerId);
+  // a new contribution was made
+  event Invested(address investor, uint weiAmount, uint tokenAmount);
 
-  // Refund was processed for a contributor
+  // refund was processed for a contributor
   event Refund(address investor, uint weiAmount);
 
-  // Crowdsale end time has been changed
+  // tokensale end time has been changed
   event EndsAtChanged(uint newEndsAt);
 
-  // Crowdsale start time has been changed
+  // tokensale start time has been changed
   event StartsAtChanged(uint newStartsAt);
-
 
   State public testState;
 
@@ -139,69 +134,59 @@ contract CrowdsaleBase is Ownable, Pausable {
     require(_end != 0);
     endsAt = _end;
 
-    // Don't mess the dates
+    // don't mix these up
     require(startsAt < endsAt);
 
-    // Minimum funding goal can be zero
+    // minimum funding goal can be zero
     minimumFundingGoal = _minimumFundingGoal;
   }
 
-  /**
-   * Don't expect to just send in money and get tokens.
-   */
+  // can't just send in money and get tokens.
   function() public payable {
     revert();
   }
 
   /**
-   * Make an investment.
+   * Make a contribution. 
    *
-   * Crowdsale must be running for one to invest.
-   * We must have not pressed the emergency brake.
-   *
+   * Crowdsale must be running for one to contribute (not paused).
    * @param receiver The Ethereum address who receives the tokens
-   * @param customerId (optional) UUID v4 to track the successful payments on the server side'
-   *
    * @return tokenAmount How mony tokens were bought
    */
-  function investInternal(address receiver, uint128 customerId) 
+  function investInternal(address receiver) 
       whenNotPaused
       internal
-      returns(uint tokensBought) 
+      returns (uint tokensBought) 
   {
-      // Determine if it's a good time to accept investment from this participant
+      // determine if it's a good time to accept contributions from this participant
       if (getState() == State.PreFunding) {
-          
+
           // only whitelisted for early deposit
           require(address(whitelist) != address(0));
           require(whitelist.verify(receiver));
 
-      } else if (getState() == State.Funding) {
-          // Retail participants can only come in when the crowdsale is running
-          // pass
-      } else {
-          // Unwanted state
+      } else if (getState() != State.Funding) {
           revert();
       }
 
       uint weiAmount = msg.value;
 
-      // Account presale sales separately, so that they do not count against pricing tranches
+      // account presale sales separately, so that they do not count against pricing tranches
       uint tokenAmount = pricingStrategy.calculatePrice(weiAmount, weiRaised - presaleWeiRaised, tokensSold, msg.sender, token.decimals());
 
-      // Dust transaction
+      // dust transaction
       require(tokenAmount != 0);
 
       if (investedAmountOf[receiver] == 0) {
-          // A new investor
+          // a new investor
           investorCount++;
       }
 
-      // Update investor
+      // update investor
       investedAmountOf[receiver] = investedAmountOf[receiver].add(weiAmount);
       tokenAmountOf[receiver] = tokenAmountOf[receiver].add(tokenAmount);
 
-      // Update totals
+      // update totals
       weiRaised = weiRaised.add(weiAmount);
       tokensSold = tokensSold.add(tokenAmount);
 
@@ -209,16 +194,16 @@ contract CrowdsaleBase is Ownable, Pausable {
           presaleWeiRaised = presaleWeiRaised.add(weiAmount);
       }
 
-    // Check that we did not bust the cap
+    // check that we did not bust the cap
     require(!isBreakingCap(weiAmount, tokenAmount, weiRaised, tokensSold));
 
     assignTokens(receiver, tokenAmount);
 
-    // Pocket the money, or fail the crowdsale if we for some reason cannot send the money to our multisig
+    // transfer to multisig or fail 
     multisigWallet.transfer(weiAmount);
 
-    // Tell us invest was success
-    Invested(receiver, weiAmount, tokenAmount, customerId);
+    // tell us contribution was success
+    Invested(receiver, weiAmount, tokenAmount);
 
     return tokenAmount;
   }
@@ -278,9 +263,7 @@ contract CrowdsaleBase is Ownable, Pausable {
       StartsAtChanged(startsAt);
   }
 
-  /**
-   * Allow to (re)set pricing strategy.
-   */
+  // allow to (re)set pricing strategy.
   function setPricingStrategy(PricingStrategy _pricingStrategy) public onlyOwner {
     
     pricingStrategy = _pricingStrategy;
@@ -303,17 +286,13 @@ contract CrowdsaleBase is Ownable, Pausable {
 
   }
 
-  /**
-   * Allow load refunds back on the contract for the refunding.
-   *
-   * The team can transfer the funds back on the smart contract in the case the minimum goal was not reached..
-   */
+   // Allow load refunds back on the contract for the refunding.
   function loadRefund() public payable inState(State.Failure) {
     require(msg.value > 0);
     loadedRefund = loadedRefund.add(msg.value);
   }
 
-  // Investors can claim refund.
+  // contributors can claim refund
   function refund() public inState(State.Refunding) {
       uint256 weiValue = investedAmountOf[msg.sender];
       require(weiValue > 0);
@@ -338,11 +317,8 @@ contract CrowdsaleBase is Ownable, Pausable {
     return pricingStrategy.isSane(address(this));
   }
 
-  /**
-   * Crowdfund state machine management.
-   *
-   * We make it a function and do not assign the result to a variable, so there is no chance of the variable being stale.
-   */
+
+  // state management - calculated everytime to avoid stale states
   function getState() public constant returns (State) {
       
       if (finalized) 
@@ -365,33 +341,26 @@ contract CrowdsaleBase is Ownable, Pausable {
           return State.Failure;
   }
 
-  // This is for manual testing of multisig wallet interaction
+  // this is for manual testing of multisig wallet interaction
   function setOwnerTestValue(uint val) public onlyOwner {
     ownerTestValue = val;
   }
 
-  // Interface marker
+  // interface marker
   function isCrowdsale() public constant returns (bool) {
     return true;
   }
 
-  /**
-   * Modifiers
-   */
-
-  // Modified allowing execution only if the crowdsale is currently running
+  // Modifiers
+  // modified allowing execution only if the crowdsale is currently running
   modifier inState(State state) {
     require(getState() == state);
     _;
   }
 
-
+  // Abstract functions
   /**
-   * Abstract functions
-   */
-
-  /**
-   * Check if the current invested breaks our cap rules.
+   * Check if the current contribution breaks our cap rules.
    *
    *
    * The child contract must define their own cap setting rules.
@@ -407,9 +376,9 @@ contract CrowdsaleBase is Ownable, Pausable {
    */
   function isBreakingCap(uint weiAmount, uint tokenAmount, uint weiRaisedTotal, uint tokensSoldTotal) public constant returns (bool limitBroken);
 
-  // Check if the current crowdsale is full
+  // check if the current crowdsale is full
   function isCrowdsaleFull() public constant returns (bool);
 
-  // Create new tokens or transfer issued tokens to the investor
+  // create new tokens or transfer issued tokens to the investor
   function assignTokens(address receiver, uint tokenAmount) internal;
 }
