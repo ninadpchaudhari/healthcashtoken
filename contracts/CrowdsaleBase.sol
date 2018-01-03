@@ -10,7 +10,6 @@
 pragma solidity ^0.4.18;
 
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import 'zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 import 'zeppelin-solidity/contracts/token/DetailedERC20.sol';
 
@@ -18,13 +17,14 @@ import "./Whitelist.sol";
 import "./PricingStrategy.sol";
 import "./FinalizeAgent.sol";
 
+
 /**
  * Crowdsale state machine without buy functionality.
  *
  * Implements basic state machine logic, but leaves out all buy functions,
  * so that subclasses can implement their own buying logic.
  */
-contract CrowdsaleBase is Ownable, Pausable {
+contract CrowdsaleBase is Pausable {
    
     // max investment count when we are still allowed to change the multisig address
     uint public MAX_INVESTMENTS_BEFORE_MULTISIG_CHANGE = 5;
@@ -374,7 +374,14 @@ contract CrowdsaleBase is Ownable, Pausable {
    *
    * @return true if taking this investment would break our cap rules
    */
-  function isBreakingCap(uint weiAmount, uint tokenAmount, uint weiRaisedTotal, uint tokensSoldTotal) public constant returns (bool limitBroken);
+  function isBreakingCap(
+      uint weiAmount, 
+      uint tokenAmount, 
+      uint weiRaisedTotal, 
+      uint tokensSoldTotal) 
+      public 
+      constant 
+      returns (bool limitBroken);
 
   // check if the current crowdsale is full
   function isCrowdsaleFull() public constant returns (bool);

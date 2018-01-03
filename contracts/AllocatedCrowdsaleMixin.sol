@@ -9,6 +9,7 @@
 
 pragma solidity ^0.4.18;
 
+import 'zeppelin-solidity/contracts/token/DetailedERC20.sol';
 import "./CrowdsaleBase.sol";
 
 /**

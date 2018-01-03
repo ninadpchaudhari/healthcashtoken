@@ -10,12 +10,11 @@
 pragma solidity ^0.4.18;
 
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
-import 'zeppelin-solidity/contracts/token/DetailedERC20.sol';
 
 import "./PricingStrategy.sol";
 import "./FinalizeAgent.sol";
 import "./AllocatedCrowdsaleMixin.sol";
-
+import "./CrowdsaleBase.sol";
 /**
  *
  * Handle
@@ -27,7 +26,7 @@ import "./AllocatedCrowdsaleMixin.sol";
  * - different investment policies (require server side customer id, allow only whitelisted addresses)
  *
  */
-contract Crowdsale is AllocatedCrowdsaleMixin {
+contract Crowdsale is CrowdsaleBase, AllocatedCrowdsaleMixin {
 
   //keep track of refferers
   uint128[] public referrers;
@@ -101,7 +100,6 @@ contract Crowdsale is AllocatedCrowdsaleMixin {
   {
      require(address(whitelist) != address(0));
      require(whitelist.verifyWithSignature(addr, v, r, s)); 
-     require(addr == msg.sender);
      investInternal(addr);
   }
 
@@ -154,6 +152,11 @@ contract Crowdsale is AllocatedCrowdsaleMixin {
 
       referrals[referralId] = referrals[referralId].add(msg.value);      
       invest(msg.sender);
+  }
+
+  //get count of referrers
+  function getReferrersCount() public constant returns (uint) {
+      return referrers.length; 
   }
   
   //basic entry point 
