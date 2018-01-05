@@ -26,8 +26,8 @@ contract('Crowdsale :: Presale Allocation', function(accounts) {
     //token
     let _name = 'Health Cash'
     let _symbol = 'HLTH'
-    let _totalSupply = 1000000000000000000000  //1000 tokens
     let _decimals = 18
+    let _totalSupply = 1000 * 10 ** _decimals  //1000 tokens
     this.token = await HealthCashToken.new(_name, _symbol, _totalSupply, _decimals)
 
     let wallet = accounts[1]

@@ -75,7 +75,7 @@ contract Crowdsale is CrowdsaleBase, AllocatedCrowdsaleMixin {
    */
   function preallocate(address receiver, uint fullTokens, uint weiPrice) public onlyOwner {
 
-    uint tokenAmount = fullTokens * 10 ** token.decimals();
+    uint tokenAmount = fullTokens * uint(10) ** token.decimals();
     uint weiAmount = weiPrice * fullTokens; // This can be also 0, we give out tokens for free
 
     weiRaised = weiRaised.add(weiAmount);

@@ -139,7 +139,7 @@ contract TokenTranchePricing is PricingStrategy, Ownable {
   // @dev Calculate the current price for buy in amount.
   function calculatePrice(uint value, uint weiRaised, uint tokensSold, address msgSender, uint decimals) public constant returns (uint) {
 
-    uint multiplier = 10 ** decimals;
+    uint multiplier = uint(10) ** decimals;
 
     // This investor is coming through pre-ico
     if (preicoAddresses[msgSender] > 0) {
