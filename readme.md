@@ -1,7 +1,7 @@
 
 ## Health Cash :: ERC20 Token
 
-This is set of contracts to create, issue and sell an ERC 20 compliant token. These contracts support: 
+This is a set of contracts to create, issue and sell an ERC 20 compliant token. These contracts support: 
 
 * Airdrops
 * whitelists sale
