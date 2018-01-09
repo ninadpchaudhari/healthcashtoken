@@ -10,13 +10,13 @@
 pragma solidity ^0.4.14;
 
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
-import 'zeppelin-solidity/contracts/token/ERC20.sol';
+import 'zeppelin-solidity/contracts/token/StandardToken.sol';
 
 /* Standard token, but transfer locked until release.
 *  Specific contracts, like the crowdsale contract, 
 *  may transfer tokens before released. 
 */
-contract ReleasableToken is ERC20, Ownable {
+contract ReleasableToken is StandardToken, Ownable {
 
   address public releaseAgent;
   bool public released = false;

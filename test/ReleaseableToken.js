@@ -5,6 +5,7 @@ const should = require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should()
 
+var HealthDRSMock = artifacts.require('./test/helpers/HealthDRSMock.sol');
 var HealthCashToken = artifacts.require("./HealthCashToken.sol")
 
 contract('HealthCash :: ReleasableToken', function(accounts) {
@@ -15,6 +16,10 @@ contract('HealthCash :: ReleasableToken', function(accounts) {
     let _totalSupply = 100
     let _decimals = 18
     this.token = await HealthCashToken.new(_name, _symbol, _totalSupply, _decimals)
+
+    this.drs = await HealthDRSMock.new(this.token.address)
+    await this.token.setTransferAgent(this.drs.address, true)     
+
   })
 
   it('should return the correct totalSupply after construction', async function() {
@@ -40,6 +45,35 @@ contract('HealthCash :: ReleasableToken', function(accounts) {
     balance.should.be.bignumber.equal(80)
 
   })
+
+  it('should return the correct allowance after authorizing HealthDRS', async function() {
+
+    //transfer from valid agent
+    await this.token.transfer(accounts[1], 100) 
+    await this.token.approve(this.drs.address, 100, {from: accounts[1]});
+    const allowance = await await this.token.allowance(accounts[1], this.drs.address)
+    allowance.should.be.bignumber.equal(100)  
+  }) 
+
+  it('should enable HealthDRS to transfer while locked', async function() {
+    
+    //account 0 can transfer
+    await this.token.transfer(accounts[1], 100) 
+    let balance = await this.token.balanceOf(accounts[1])
+    balance.should.be.bignumber.equal(100)    
+
+    //account 1 can not transfer
+    await this.token.transfer(accounts[0], 100, {from: accounts[1]}) 
+    balance = await this.token.balanceOf(accounts[0])
+    balance.should.be.bignumber.equal(0)    
+
+    //account 1 using HealthDRSMock, can transfer to account 0
+    await this.token.approve(this.drs.address, 100, {from: accounts[1]});
+    await this.drs.purchaseKey(accounts[0], {from: accounts[1]});
+    balance = await this.token.balanceOf(accounts[0])
+    balance.should.be.bignumber.equal(10)    
+  })   
+
 
   it('should let transfer agents transfer', async function() {
 

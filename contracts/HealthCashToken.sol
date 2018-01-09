@@ -32,5 +32,21 @@ contract HealthCashToken is BurnableToken, ReleasableToken {
     setTransferAgent(owner, true);
   }
 
+  /** 
+   * Allow contracts the ability to transfer
+   * for those that might not be able to 
+   * transfer themselves. 
+   * 
+   * Used to enable utility of our token
+   * immediatly even while the token is 
+   * not released for transfering otherwise. 
+   */
+  modifier canTransfer(address _sender) {
+
+      if (!released) { 
+        require(transferAgents[_sender] || transferAgents[msg.sender]);
+      }
+      _;
+  }
 
 }
