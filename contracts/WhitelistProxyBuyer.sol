@@ -1,10 +1,10 @@
 /**
  * Numerous modifications have been made to this smart contract.
- * All such modifications are Copyright 2017 SimplyVitalHealth, Inc. 
- * 
+ * All such modifications are Copyright 2017 SimplyVitalHealth, Inc.
+ *
  * This smart contract code is Copyright 2017 TokenMarket Ltd. For more information see https://tokenmarket.net
  * Licensed under the Apache License, version 2.0: https://github.com/Health-Nexus/healthcashtoken/blob/master/LICENSE
- * 
+ *
  */
 
 pragma solidity ^0.4.18;
@@ -12,7 +12,7 @@ pragma solidity ^0.4.18;
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import 'zeppelin-solidity/contracts/lifecycle/Pausable.sol';
-import 'zeppelin-solidity/contracts/token/DetailedERC20.sol';
+import 'zeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol';
 
 import "./Whitelist.sol";
 import "./Crowdsale.sol";
@@ -33,76 +33,76 @@ import "./Crowdsale.sol";
 contract WhitelistProxyBuyer is Ownable, Pausable {
   using SafeMath for uint;
 
-  // How many investors we have now 
+  // How many investors we have now
   uint public investorCount;
 
-  // How many wei we have raised total 
+  // How many wei we have raised total
   uint public weiRaised;
 
-  // Who are our investors (iterable) 
+  // Who are our investors (iterable)
   address[] public investors;
 
-  // How much they have invested 
+  // How much they have invested
   mapping(address => uint) public balances;
 
-  // How many tokens investors have claimed 
+  // How many tokens investors have claimed
   mapping(address => uint) public claimed;
 
-  // When our refund freeze is over (UNIT timestamp) 
+  // When our refund freeze is over (UNIT timestamp)
   uint public freezeEndsAt;
 
-  // What is the minimum buy in 
+  // What is the minimum buy in
   uint public weiMinimumLimit;
 
-  // What is the maximum buy in 
+  // What is the maximum buy in
   uint public weiMaximumLimit;
 
-  // How many weis total we are allowed to collect. 
+  // How many weis total we are allowed to collect.
   uint public weiCap;
 
-  // How many tokens were bought 
+  // How many tokens were bought
   uint public tokensBought;
 
-  // How many investors have claimed their tokens 
+  // How many investors have claimed their tokens
   uint public claimCount;
 
   uint public totalClaimed;
 
-  // If timeLock > 0, claiming is possible only after the time has passed 
+  // If timeLock > 0, claiming is possible only after the time has passed
   uint public timeLock;
 
-  // This is used to signal that we want the refund 
+  // This is used to signal that we want the refund
   bool public forcedRefund;
 
-  // Our crowdsale contract where we will move the funds 
+  // Our crowdsale contract where we will move the funds
   Crowdsale public crowdsale;
 
   // Our Whitelist where approved purchasers are listed
   Whitelist public whitelist;
 
-  // What is our current state. 
+  // What is our current state.
   enum State { Unknown, Funding, Distributing, Refunding }
 
-  // Somebody loaded their investment money 
+  // Somebody loaded their investment money
   event Invested(address investor, uint weiAmount, uint tokenAmount);
 
-  // Refund claimed 
+  // Refund claimed
   event Refunded(address investor, uint value);
 
-  // We executed our buy 
+  // We executed our buy
   event TokensBoughts(uint count);
 
-  // We distributed tokens to an investor 
+  // We distributed tokens to an investor
   event Distributed(address investor, uint count);
 
   function WhitelistProxyBuyer(
-      address _owner, 
-      uint _freezeEndsAt, 
-      uint _weiMinimumLimit, 
-      uint _weiMaximumLimit, 
+      address _owner,
+      uint _freezeEndsAt,
+      uint _weiMinimumLimit,
+      uint _weiMaximumLimit,
       uint _weiCap
   )
-      public    
+      public
   {
 
     require(_freezeEndsAt > 0);
@@ -116,24 +116,24 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
     freezeEndsAt = _freezeEndsAt;
   }
 
-  // Get the token we are distributing. 
-  function getToken() 
+  // Get the token we are distributing.
+  function getToken()
       public
       constant
-      returns(DetailedERC20) 
+      returns(DetailedERC20)
   {
       require(address(crowdsale) != address(0));
       return crowdsale.token();
   }
 
-  // Participate in whitelist contribution 
+  // Participate in whitelist contribution
   function buy()
       public
       payable
       whenNotPaused
    {
 
-    require(address(whitelist) != address(0)); // whitelist should be set    
+    require(address(whitelist) != address(0)); // whitelist should be set
     require(whitelist.verify(msg.sender));
     require(getState() == State.Funding);
     require(msg.value > 0); // No empty buys
@@ -143,7 +143,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
 
     balances[investor] = balances[investor].add(msg.value);
 
-    // Need to satisfy minimum and maximum limits 
+    // Need to satisfy minimum and maximum limits
     require(balances[investor] >= weiMinimumLimit && balances[investor] <= weiMaximumLimit);
 
     // This is a new investor
@@ -161,16 +161,16 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
 
   }
 
-  // Send funds to crowdsale for all participants 
+  // Send funds to crowdsale for all participants
   function buyForEverybody() whenNotPaused public {
 
     require(getState() == State.Funding);
     require(address(crowdsale) != address(0)); // crowdsale should be set
 
-    // Buy tokens on the contract 
+    // Buy tokens on the contract
     crowdsale.invest.value(weiRaised)(address(this));
 
-    // Record how many tokens we got 
+    // Record how many tokens we got
     tokensBought = getToken().balanceOf(address(this));
 
     require(tokensBought > 0);
@@ -178,10 +178,10 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   }
 
   // How may tokens each participant gets
-  function getClaimAmount(address investor) 
+  function getClaimAmount(address investor)
       public
       constant
-      returns (uint) 
+      returns (uint)
   {
     // Claims can be only made if we manage to buy tokens
     require(getState() == State.Distributing);
@@ -192,7 +192,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   function getClaimLeft(address investor)
       public
       constant
-      returns (uint) 
+      returns (uint)
   {
       return getClaimAmount(investor).sub(claimed[investor]);
   }
@@ -205,9 +205,9 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   // Claim N bought tokens to the investor as the msg sender.
   function claim(uint amount)
       public
-      whenNotPaused 
+      whenNotPaused
   {
-    
+
     require (now > timeLock);
     require(amount > 0);
 
@@ -229,7 +229,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   // crowdsale never happened. Allow refund.
   function refund()
       public
-      whenNotPaused 
+      whenNotPaused
   {
     require(getState() == State.Refunding);
 
@@ -242,22 +242,22 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
     Refunded(investor, amount);
   }
 
-  /** Set the crowdsale contract, 
-   *  where we will move presale funds 
-   *  when the whitesale is complete. */      
-  function setCrowdsale(Crowdsale _crowdsale) 
+  /** Set the crowdsale contract,
+   *  where we will move presale funds
+   *  when the whitesale is complete. */
+  function setCrowdsale(Crowdsale _crowdsale)
       public
-      onlyOwner 
-  {  
+      onlyOwner
+  {
     crowdsale = _crowdsale;
   }
 
-  
+
   // Set the whitelist which approves our buyers
-  function setWhitelist(Whitelist _whitelist) 
+  function setWhitelist(Whitelist _whitelist)
       public
-      onlyOwner 
-  {  
+      onlyOwner
+  {
       whitelist = _whitelist;
   }
 
@@ -265,7 +265,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   // set time after which claiming is possible
   function setTimeLock(uint _timeLock)
       public
-      onlyOwner 
+      onlyOwner
   {
       timeLock = _timeLock;
   }
@@ -273,7 +273,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   // set weiMinLimit, to adjust as desired
   function setWeiMinimumLimit(uint _weiMinimumLimit)
       public
-      onlyOwner 
+      onlyOwner
   {
       weiMinimumLimit = _weiMinimumLimit;
   }
@@ -281,7 +281,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   // set weiMaxLimit, to adjust as desired
   function setWeiMaximumLimit(uint _weiMaximumLimit)
       public
-      onlyOwner 
+      onlyOwner
   {
       weiMaximumLimit = _weiMaximumLimit;
   }
@@ -289,7 +289,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
   // set weiCap, to adjust as desired
   function setWeiCap(uint _weiCap)
       public
-      onlyOwner 
+      onlyOwner
   {
       weiCap = _weiCap;
   }
@@ -306,8 +306,8 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
 
   // return current contract state
   function getState() public constant returns(State) {
-    
-      if (forcedRefund) 
+
+      if (forcedRefund)
           return State.Refunding;
 
       if (tokensBought == 0) {

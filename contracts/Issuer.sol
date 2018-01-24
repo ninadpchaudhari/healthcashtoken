@@ -1,10 +1,10 @@
 pragma solidity ^0.4.14;
 
-import 'zeppelin-solidity/contracts/token/StandardToken.sol';
+import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 
 /**
- * Issuer manages token distribution 
+ * Issuer manages token distribution
  *
  * This contract is fed a CSV file with Ethereum addresses and associated
  * token balances. It act as a gate keeper to ensure there is no double
@@ -16,7 +16,7 @@ contract Issuer is Ownable {
   // addresses whose tokens we have already issued
   mapping(address => bool) public issued;
 
- // token we are distributing 
+ // token we are distributing
   StandardToken public token;
 
   // address from whom the tokens tokens will be distributed

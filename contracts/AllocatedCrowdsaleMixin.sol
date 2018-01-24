@@ -1,20 +1,20 @@
 /**
  * Numerous modifications have been made to this smart contract.
- * All such modifications are Copyright 2017 SimplyVitalHealth, Inc. 
- * 
+ * All such modifications are Copyright 2017 SimplyVitalHealth, Inc.
+ *
  * This smart contract code is Copyright 2017 TokenMarket Ltd. For more information see https://tokenmarket.net
  * Licensed under the Apache License, version 2.0: https://github.com/Health-Nexus/healthcashtoken/blob/master/LICENSE
- * 
+ *
  */
 
 pragma solidity ^0.4.18;
 
-import 'zeppelin-solidity/contracts/token/DetailedERC20.sol';
+import 'zeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol';
 import "./CrowdsaleBase.sol";
 
 /**
  *   This crowdsale type sells tokens from a preallocated pool
- *   The token owner must transfer sellable tokens to the 
+ *   The token owner must transfer sellable tokens to the
  *   crowdsale contract using the ERC20.approve()
  */
 contract AllocatedCrowdsaleMixin is CrowdsaleBase {
@@ -29,15 +29,15 @@ contract AllocatedCrowdsaleMixin is CrowdsaleBase {
 
   // called from invest() to confirm if the current purchase does not break our cap rule
   function isBreakingCap(
-      uint weiAmount, 
-      uint tokenAmount, 
-      uint weiRaisedTotal, 
-      uint tokensSoldTotal) 
-      public 
-      constant 
+      uint weiAmount,
+      uint tokenAmount,
+      uint weiRaisedTotal,
+      uint tokensSoldTotal)
+      public
+      constant
       returns (bool limitBroken)
   {
-      
+
       return (tokenAmount > getTokensLeft());
 
   }

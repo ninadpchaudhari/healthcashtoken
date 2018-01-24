@@ -1,7 +1,7 @@
 
 pragma solidity ^0.4.14;
 
-import 'zeppelin-solidity/contracts/token/BurnableToken.sol';
+import 'zeppelin-solidity/contracts/token/ERC20/BurnableToken.sol';
 import "./ReleasableToken.sol";
 
 contract HealthCashToken is BurnableToken, ReleasableToken {
@@ -9,14 +9,15 @@ contract HealthCashToken is BurnableToken, ReleasableToken {
   string public name;
   string public symbol;
   uint public decimals;
+  uint public totalSupply;
 
   /**
    * @param _name        : token name
-   * @param _symbol      : token symbol 
-   * @param _totalSupply : how many tokens 
+   * @param _symbol      : token symbol
+   * @param _totalSupply : how many tokens
    * @param _decimals    : number of decimal places
    */
-  function HealthCashToken(string _name, string _symbol, uint _totalSupply, uint _decimals) public 
+  function HealthCashToken(string _name, string _symbol, uint _totalSupply, uint _decimals) public
   {
 
     // Create with any address, can be transferred
@@ -32,18 +33,18 @@ contract HealthCashToken is BurnableToken, ReleasableToken {
     setTransferAgent(owner, true);
   }
 
-  /** 
+  /**
    * Allow contracts the ability to transfer
-   * for those that might not be able to 
-   * transfer themselves. 
-   * 
+   * for those that might not be able to
+   * transfer themselves.
+   *
    * Used to enable utility of our token
-   * immediatly even while the token is 
-   * not released for transfering otherwise. 
+   * immediatly even while the token is
+   * not released for transfering otherwise.
    */
   modifier canTransfer(address _sender) {
 
-      if (!released) { 
+      if (!released) {
         require(transferAgents[_sender] || transferAgents[msg.sender]);
       }
       _;

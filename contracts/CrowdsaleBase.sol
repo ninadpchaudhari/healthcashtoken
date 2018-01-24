@@ -1,17 +1,17 @@
 /**
  * Numerous modifications have been made to this smart contract.
- * All such modifications are Copyright 2017 SimplyVitalHealth, Inc. 
- * 
+ * All such modifications are Copyright 2017 SimplyVitalHealth, Inc.
+ *
  * This smart contract code is Copyright 2017 TokenMarket Ltd. For more information see https://tokenmarket.net
  * Licensed under the Apache License, version 2.0: https://github.com/Health-Nexus/healthcashtoken/blob/master/LICENSE
- * 
+ *
  */
 
 pragma solidity ^0.4.18;
 
 import 'zeppelin-solidity/contracts/math/SafeMath.sol';
 import 'zeppelin-solidity/contracts/lifecycle/Pausable.sol';
-import 'zeppelin-solidity/contracts/token/DetailedERC20.sol';
+import 'zeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol';
 
 import "./Whitelist.sol";
 import "./PricingStrategy.sol";
@@ -25,7 +25,7 @@ import "./FinalizeAgent.sol";
  * so that subclasses can implement their own buying logic.
  */
 contract CrowdsaleBase is Pausable {
-   
+
     // max investment count when we are still allowed to change the multisig address
     uint public MAX_INVESTMENTS_BEFORE_MULTISIG_CHANGE = 5;
 
@@ -46,7 +46,7 @@ contract CrowdsaleBase is Pausable {
     // if the funding goal is not reached, investors may withdraw their funds
     uint public minimumFundingGoal;
 
-    // unix timestamp start date of the token sale 
+    // unix timestamp start date of the token sale
     uint public startsAt;
 
     // unix timestamp end date of the token sale
@@ -118,7 +118,7 @@ contract CrowdsaleBase is Pausable {
       uint _start,
       uint _end,
       uint _minimumFundingGoal)
-      public 
+      public
   {
 
     token = DetailedERC20(_token);
@@ -126,7 +126,7 @@ contract CrowdsaleBase is Pausable {
     setPricingStrategy(_pricingStrategy);
 
     multisigWallet = _multisigWallet;
-    require(multisigWallet != address(0)); 
+    require(multisigWallet != address(0));
 
     require(_start != 0);
     startsAt = _start;
@@ -147,16 +147,16 @@ contract CrowdsaleBase is Pausable {
   }
 
   /**
-   * Make a contribution. 
+   * Make a contribution.
    *
    * Crowdsale must be running for one to contribute (not paused).
    * @param receiver The Ethereum address who receives the tokens
    * @return tokenAmount How mony tokens were bought
    */
-  function investInternal(address receiver) 
+  function investInternal(address receiver)
       whenNotPaused
       internal
-      returns (uint tokensBought) 
+      returns (uint tokensBought)
   {
       // determine if it's a good time to accept contributions from this participant
       if (getState() == State.PreFunding) {
@@ -199,7 +199,7 @@ contract CrowdsaleBase is Pausable {
 
     assignTokens(receiver, tokenAmount);
 
-    // transfer to multisig or fail 
+    // transfer to multisig or fail
     multisigWallet.transfer(weiAmount);
 
     // tell us contribution was success
@@ -230,21 +230,21 @@ contract CrowdsaleBase is Pausable {
    * Allow to (re)set finalize agent.
    */
   function setFinalizeAgent(FinalizeAgent addr) public onlyOwner {
-    
+
       finalizeAgent = addr;
       require(finalizeAgent.isFinalizeAgent()); //must be agent
   }
 
   // Set the whitelist which approves our buyers
-  function setWhitelist(Whitelist addr) public onlyOwner {  
-      
+  function setWhitelist(Whitelist addr) public onlyOwner {
+
       whitelist = addr;
       require(whitelist.isWhitelist()); //must be whitelist
 
   }
 
   /**
-   * Allow crowdsale owner to adjust times of crowsale 
+   * Allow crowdsale owner to adjust times of crowsale
    *
    * This may put the crowdsale to an invalid state,
    * but we trust owners know what they are doing.
@@ -265,11 +265,11 @@ contract CrowdsaleBase is Pausable {
 
   // allow to (re)set pricing strategy.
   function setPricingStrategy(PricingStrategy _pricingStrategy) public onlyOwner {
-    
+
     pricingStrategy = _pricingStrategy;
-    
+
     //must be pricing strategy
-    require(pricingStrategy.isPricingStrategy()); 
+    require(pricingStrategy.isPricingStrategy());
   }
 
   /**
@@ -320,8 +320,8 @@ contract CrowdsaleBase is Pausable {
 
   // state management - calculated everytime to avoid stale states
   function getState() public constant returns (State) {
-      
-      if (finalized) 
+
+      if (finalized)
           return State.Finalized;
       else if (address(finalizeAgent) == 0)
           return State.Preparing;
@@ -375,12 +375,12 @@ contract CrowdsaleBase is Pausable {
    * @return true if taking this investment would break our cap rules
    */
   function isBreakingCap(
-      uint weiAmount, 
-      uint tokenAmount, 
-      uint weiRaisedTotal, 
-      uint tokensSoldTotal) 
-      public 
-      constant 
+      uint weiAmount,
+      uint tokenAmount,
+      uint weiRaisedTotal,
+      uint tokensSoldTotal)
+      public
+      constant
       returns (bool limitBroken);
 
   // check if the current crowdsale is full
