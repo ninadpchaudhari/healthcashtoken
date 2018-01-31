@@ -20,6 +20,7 @@ contract FlatPricing is PricingStrategy, Ownable {
 
   // How many weis one token costs 
   uint public oneTokenInWei;
+  uint public minimumInWei = 0;  
 
   function FlatPricing(uint _oneTokenInWei) public {
     require(_oneTokenInWei > 0);
@@ -30,8 +31,18 @@ contract FlatPricing is PricingStrategy, Ownable {
       oneTokenInWei = _oneTokenInWei;
   }
 
+  function setMinimum(uint _minimumInWei) public onlyOwner {
+      minimumInWei = _minimumInWei;
+  }
+
   // Calculate the current price for buy in amount.
   function calculatePrice(uint value, uint weiRaised, uint tokensSold, address msgSender, uint decimals) public constant returns (uint) {
+    
+    //require the contribution meet our minimum
+    if (value < minimumInWei) {
+      return 0;
+    }
+
     uint multiplier = uint(10) ** decimals;
     return value.mul(multiplier) / oneTokenInWei;
   }
