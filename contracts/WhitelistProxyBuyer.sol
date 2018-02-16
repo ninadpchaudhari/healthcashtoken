@@ -212,7 +212,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
     require(amount > 0);
 
     address investor = msg.sender;
-    require(getClaimLeft(investor) <= amount);
+    require(amount <= getClaimLeft(investor));
 
     // We track who many investor have (partially) claimed their tokens
     if (claimed[investor] == 0) {
@@ -249,6 +249,7 @@ contract WhitelistProxyBuyer is Ownable, Pausable {
       public
       onlyOwner 
   {  
+    require(_crowdsale.isCrowdsale());      
     crowdsale = _crowdsale;
   }
 
