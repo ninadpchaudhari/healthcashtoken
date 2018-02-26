@@ -49,4 +49,29 @@ contract HealthCashToken is BurnableToken, ReleasableToken {
       _;
   }
 
+  /**
+   * These allow us to create the token contract, 
+   * distribute the presale tokens and verify the 
+   * distribution is correct before setting the 
+   * token's real name and symbol. 
+  */
+  function setName(string _name) 
+       onlyOwner
+       inReleaseState(false)
+       public 
+  {
+
+      name = _name;
+  }
+
+  function setSymbol(string _symbol) 
+       onlyOwner
+       inReleaseState(false)
+       public 
+  {
+    symbol = _symbol;
+  }
+
+
+
 }
